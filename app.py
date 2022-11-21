@@ -10,7 +10,7 @@ from dash import Input, Output
 import plotly.express as px
 
 
-df = pd.read_excel('dashboard.xlsx',
+df = pd.read_excel('assets/dashboard.xlsx',
                    sheet_name='data',
                    parse_dates=['Date'])
 ##print(df.head(), end='\n\n')
