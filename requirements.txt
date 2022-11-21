@@ -1,0 +1,6 @@
+dash_auth==1.4.1
+dash_core_components==2.0.0
+dash_html_components==2.0.0
+numpy==1.23.3
+pandas==1.5.0
+plotly==5.11.0
