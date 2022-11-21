@@ -154,5 +154,7 @@ def update_plot(selection, date):
 
 
 app.title = "shukkkur"
-app.run_server(debug=True)
+
+if __name__ == "__main__":
+  app.run_server(debug=True)
 
