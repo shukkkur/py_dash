@@ -57,6 +57,7 @@ c_df = df.Outcome.value_counts()
 
 ##### DASHBOARD #######
 app = Dash(__name__)
+server = app.server
 app.layout = html.Div(children=[
 
         html.H2("Dynamic & Interactive", style={'textAlign': 'center'}),
