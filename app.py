@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from datetime import date
@@ -156,5 +157,4 @@ def update_plot(selection, date):
 app.title = "shukkkur"
 
 if __name__ == "__main__":
-  app.run_server(debug=True)
-
+  app.run_server("0.0.0.0", debug=False, port=int(os.environ.get('PORT', 8000)))
