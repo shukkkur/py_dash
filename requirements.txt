@@ -1,6 +1,7 @@
 click==8.1.3
 numpy
 pandas
+dash_bootstrap_components
 openpyxl
 colorama==0.4.6
 dash==2.7.0
