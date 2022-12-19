@@ -1,0 +1,125 @@
+digraph G {
+        graph [
+            nodesep=0.5;
+            rankdir="LR";
+            cencentrate=true;
+            splines="spline";
+            fontname="Helvetica";
+            pad="0.2,0.2",
+            label="",
+
+        ];
+
+        node [shape=plain, fontname="Helvetica"];
+        edge [
+            dir=both,
+            fontsize=12,
+            arrowsize=0.9,
+            penwidth=1.0,
+            labelangle=32,
+            labeldistance=1.8,
+            fontname="Helvetica"
+        ];
+
+	 regions [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>regions</b></td></tr>
+        
+		<tr><td port="region_id" align="left" cellpadding="5">region_id <font color="grey60">object</font></td></tr>
+		<tr><td port="region_name" align="left" cellpadding="5">region_name <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 countries [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>countries</b></td></tr>
+        
+		<tr><td port="country_id" align="left" cellpadding="5">country_id <font color="grey60">object</font></td></tr>
+		<tr><td port="country_name" align="left" cellpadding="5">country_name <font color="grey60">object</font></td></tr>
+		<tr><td port="region_id" align="left" cellpadding="5">region_id <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 locations [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>locations</b></td></tr>
+        
+		<tr><td port="location_id" align="left" cellpadding="5">location_id <font color="grey60">int64</font></td></tr>
+		<tr><td port="street_address" align="left" cellpadding="5">street_address <font color="grey60">object</font></td></tr>
+		<tr><td port="postal_code" align="left" cellpadding="5">postal_code <font color="grey60">object</font></td></tr>
+		<tr><td port="city" align="left" cellpadding="5">city <font color="grey60">object</font></td></tr>
+		<tr><td port="state_province" align="left" cellpadding="5">state_province <font color="grey60">object</font></td></tr>
+		<tr><td port="country_id" align="left" cellpadding="5">country_id <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 departments [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>departments</b></td></tr>
+        
+		<tr><td port="department_id" align="left" cellpadding="5">department_id <font color="grey60">int64</font></td></tr>
+		<tr><td port="depart_name" align="left" cellpadding="5">depart_name <font color="grey60">object</font></td></tr>
+		<tr><td port="manager_id" align="left" cellpadding="5">manager_id <font color="grey60">object</font></td></tr>
+		<tr><td port="location_id" align="left" cellpadding="5">location_id <font color="grey60">int64</font></td></tr>
+		</table>>];
+
+	 employees [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>employees</b></td></tr>
+        
+		<tr><td port="employee_id" align="left" cellpadding="5">employee_id <font color="grey60">int64</font></td></tr>
+		<tr><td port="first_name" align="left" cellpadding="5">first_name <font color="grey60">object</font></td></tr>
+		<tr><td port="last_name" align="left" cellpadding="5">last_name <font color="grey60">object</font></td></tr>
+		<tr><td port="email" align="left" cellpadding="5">email <font color="grey60">object</font></td></tr>
+		<tr><td port="phone_number" align="left" cellpadding="5">phone_number <font color="grey60">object</font></td></tr>
+		<tr><td port="hire_date" align="left" cellpadding="5">hire_date <font color="grey60">object</font></td></tr>
+		<tr><td port="job_id" align="left" cellpadding="5">job_id <font color="grey60">object</font></td></tr>
+		<tr><td port="salary" align="left" cellpadding="5">salary <font color="grey60">int64</font></td></tr>
+		<tr><td port="commission_pct" align="left" cellpadding="5">commission_pct <font color="grey60">float64</font></td></tr>
+		<tr><td port="manager_id" align="left" cellpadding="5">manager_id <font color="grey60">int64</font></td></tr>
+		<tr><td port="department_id" align="left" cellpadding="5">department_id <font color="grey60">int64</font></td></tr>
+		<tr><td port="Avg_Salary" align="left" cellpadding="5">Avg_Salary <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 job_history [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>job_history</b></td></tr>
+        
+		<tr><td port="employee_id" align="left" cellpadding="5">employee_id <font color="grey60">object</font></td></tr>
+		<tr><td port="start_date" align="left" cellpadding="5">start_date <font color="grey60">object</font></td></tr>
+		<tr><td port="end_date" align="left" cellpadding="5">end_date <font color="grey60">object</font></td></tr>
+		<tr><td port="job_id" align="left" cellpadding="5">job_id <font color="grey60">object</font></td></tr>
+		<tr><td port="department_id" align="left" cellpadding="5">department_id <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 jobs [ label=<
+        <table border="0" cellborder="1" cellspacing="0">
+        <tr><td bgcolor="lightblue"><b>jobs</b></td></tr>
+        
+		<tr><td port="job_id" align="left" cellpadding="5">job_id <font color="grey60">object</font></td></tr>
+		<tr><td port="job_title" align="left" cellpadding="5">job_title <font color="grey60">object</font></td></tr>
+		<tr><td port="min_salary" align="left" cellpadding="5">min_salary <font color="grey60">object</font></td></tr>
+		<tr><td port="max_salary" align="left" cellpadding="5">max_salary <font color="grey60">object</font></td></tr>
+		</table>>];
+
+	 regions:region_id->countries:region_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 countries:country_id->locations:country_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 departments:department_id->job_history:department_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 locations:location_id->departments:location_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 jobs:job_id->employees:job_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 job_history:employee_id->employees:employee_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 jobs:job_id->job_history:job_id [ 
+                        arrowhead=ocrow, arrowtail=none];
+
+	 employees:department_id->departments:department_id [ 
+                        arrowhead=none, arrowtail=ocrow];
+	}

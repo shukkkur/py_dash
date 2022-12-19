@@ -1,7 +1,68 @@
+import bs4
+import sqlite3
+import requests
 import numpy as np
 import pandas as pd
-from datetime import date
+from sqlite3 import Error
+from pandaserd import ERD
 
+
+db_file = 'assets/hr.db'
+
+try:
+    connection = sqlite3.connect(db_file)
+except Error as e:
+    print(e)
+
+
+#  below code taken from
+#  https://www.sqlitetutorial.net/sqlite-python/sqlite-python-select/
+regions = pd.read_sql_query("select * from regions;", connection)
+countries = pd.read_sql_query("select * from countries;", connection)
+locations = pd.read_sql_query("select * from locations;", connection)
+departments = pd.read_sql_query("select * from departments;", connection)
+employees = pd.read_sql_query("select * from employees;", connection)
+jobs = pd.read_sql_query("select * from jobs;", connection)
+job_history = pd.read_sql_query("select * from job_history;", connection)
+
+# duplicate first rows
+regions.drop(0, axis=0, inplace=True)
+countries.drop(0, axis=0, inplace=True)
+jobs.drop(0, axis=0, inplace=True)
+job_history.drop(0, axis=0, inplace=True)
+
+
+#  below code taken from
+#  https://pypi.org/project/pandaserd/
+#  https://github.com/nabsabraham/pandas-erd#create-erd-diagram-from-pandas-dataframes
+erd = ERD()
+
+regions_table = erd.add_table(regions, 'regions', bg_color='lightblue')
+countries_table = erd.add_table(countries, 'countries', bg_color='lightblue')
+locations_table = erd.add_table(locations, 'locations', bg_color='lightblue')
+departments_table = erd.add_table(departments, 'departments', bg_color='lightblue')
+employees_table = erd.add_table(employees, 'employees', bg_color='lightblue')
+job_history_table = erd.add_table(job_history, 'job_history', bg_color='lightblue')
+jobs_table = erd.add_table(jobs, 'jobs', bg_color='lightblue')
+
+erd.create_rel('regions', 'countries', on='region_id', right_cardinality='*')
+erd.create_rel('countries', 'locations', on='country_id', right_cardinality='*')
+erd.create_rel('departments', 'job_history', on='department_id', right_cardinality='*')
+erd.create_rel('locations', 'departments', on='location_id', right_cardinality='*')
+erd.create_rel('jobs', 'employees', on='job_id', right_cardinality='*')
+erd.create_rel('job_history', 'employees', on='employee_id', right_cardinality='*')
+erd.create_rel('jobs', 'job_history', on='job_id', right_cardinality='*')
+erd.create_rel('employees', 'departments', on='department_id', left_cardinality='*')
+
+##erd.write_to_file('output.txt')
+
+#  after insterting the DOT code from output.txt in https://edotor.net/
+#  the resulting image is graph.png
+
+
+"""
+##EXERCISE 2
+"""
 from dash import Dash
 from dash import dcc
 from dash import html
@@ -11,6 +72,44 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 
+
+def scrape():
+
+    out = {10: [], 25: [], 75: [], 90: []}
+
+    url = 'https://www.itjobswatch.co.uk/jobs/uk/sqlite.do'
+    html = requests.get(url).content
+    soup = bs4.BeautifulSoup(html, 'html.parser')
+
+    table = soup.find('table', class_='summary')
+    rows = table.find_all('tr')
+    for i in rows:
+        if "<td>10<sup>th</sup> Percentile</td>" in str(i):
+            for b in i.find_all('td', class_='fig'):
+                if str(b.text[1:]) != "":
+                    out[10].append(int(b.text[1:].replace(",", "")))
+                else:
+                    out[10].append(None)
+        if "<td>25<sup>th</sup> Percentile</td>" in str(i):
+            for b in i.find_all('td', class_='fig'):
+                if str(b.text[1:]) != "":
+                    out[25].append(int(b.text[1:].replace(",", "")))
+                else:
+                    out[25].append(None)
+        if "<td>75<sup>th</sup> Percentile</td>" in str(i):
+            for b in i.find_all('td', class_='fig'):
+                if str(b.text[1:]) != "":
+                    out[75].append(int(b.text[1:].replace(",", "")))
+                else:
+                    out[75].append(None)
+        if "<td>90<sup>th</sup> Percentile</td>" in str(i):
+            for b in i.find_all('td', class_='fig'):
+                if str(b.text[1:]) != "":
+                    out[90].append(int(b.text[1:].replace(",", "")))
+                else:
+                    out[90].append(None)
+
+    return out
 
 # styling the sidebar
 SIDEBAR_STYLE = {
@@ -33,180 +132,57 @@ CONTENT_STYLE = {
     "padding": "2rem 1rem",
 }
 
+merged = pd.merge(employees, jobs, how='left', on='job_id')
+counted = merged.groupby('job_title').count().reset_index()
 
-
-df = pd.read_excel('assets/dashboard.xlsx',
-                   sheet_name='data',
-                   parse_dates=['Date'])
-
-
-################  a) #######################
-df_dt_indexed = df.set_index('Date')
-df_dt_grouped = df.groupby('Date').count()
-df_dt_grouped['Total'] = df_dt_grouped.Outcome
-df_date_outcome_grouped = df.groupby(['Date', 'Outcome']).count()
-df_dt_grouped['Success'] = df_date_outcome_grouped.xs('Success', level=1).iloc[:, 0]
-df_dt_grouped['Failure'] = df_date_outcome_grouped.xs('Failure', level=1).iloc[:, 0]
-nan_rows = df_dt_grouped[df_dt_grouped.Success.isna()]
-df_dt_grouped.loc[nan_rows.index, ['Success']] = nan_rows['Total'] - nan_rows['Failure']
-df_dt_grouped.Success = df_dt_grouped['Success'].astype('int64')
-df_dt_grouped.reset_index(inplace = True)
-
-
-#### b) Data
-df_state_grouped = df.groupby(['State', 'Outcome']).count()
-b_df = pd.DataFrame(df_state_grouped.xs('Success', level=1).iloc[:, 0])
-b_df.columns = ['Success']
-b_df['Failure'] = df_state_grouped.xs('Failure', level=1).iloc[:, 0]
-b_df = b_df.fillna(0).astype('int64').reset_index()
-
-
-bar_graph = px.bar(data_frame=b_df,
-                   x='State',
-                   y=['Success', 'Failure'],
-                   barmode='group',
-                   labels = {'variable': '',
-                             'value': 'Number of Calls'})
+bar_graph = px.bar(data_frame=counted,
+                   x='job_title',
+                   y='employee_id',
+                   color='job_title',
+                   labels = {'job_title': 'Jobs',
+                             'employee_id': 'Count'})
 
 bar_graph.update_layout(showlegend=True,
                         plot_bgcolor='#0e2433',
                         paper_bgcolor='#0e2433',
-                        font_color="white",)
+                        font_color="white")
 
-#### c)
-c_df = df.Outcome.value_counts()
-
-c_graph = px.pie(values=c_df,
-                   names=c_df.index,
-                   color_discrete_sequence=px.colors.sequential.Rainbow)
-
-c_graph.update_layout(showlegend=True,
-                        plot_bgcolor='#0e2433',
-                        paper_bgcolor='#0e2433',
-                        font_color="white",)
-
-#### d)
-d_graph = go.Figure()
-
-totac = df.groupby("State")["Outcome"].count()
-totsuc = df[df["Outcome"] == "Success"].groupby("State")["Outcome"].count()
-
-state_success = (totsuc / totac * 100).sort_values(ascending=False)
-
-d_graph.add_trace(
-    go.Bar(
-        x=state_success.index,
-        y=state_success.values,
-        name="State success",
-        marker_color='orange',
-    )
-)
-
-d_graph["layout"]["xaxis"]["title"] = "State"
-d_graph["layout"]["yaxis"]["title"] = "Success"
-d_graph["layout"]["legend_title"] = "Legends"
-d_graph['layout']['paper_bgcolor'] = '#0e2433'
-d_graph['layout']['plot_bgcolor'] = '#0e2433'
-d_graph['layout']['font_color'] = 'white'
-
-
-#### e)
-e_graph = go.Figure()
-
-e_graph.add_trace(
-    go.Pie(
-        labels=totac.index,
-        values=totac.values,
-        textinfo="none",
-        name="total calls",
-        hole=0.6,
-    ),
-)
-
-e_graph.add_trace(
-    go.Pie(
-        labels=totsuc.index,
-        values=totsuc.values,
-        textinfo="none",
-        name="success calls",
-        hole=0.45,
-    ),
-)
-e_graph.data[0].domain = {"x": [0, 1], "y": [1, 1]}
-e_graph.data[1].domain = {"x": [0, 1], "y": [0.22, 0.78]}
-e_graph.update_traces(hoverinfo="label+percent+name")
-e_graph["layout"]["legend_title"] = "Labels"
-e_graph['layout']['paper_bgcolor'] = '#0e2433'
-e_graph['layout']['plot_bgcolor'] = '#0e2433'
-e_graph['layout']['font_color'] = 'white'
-
-
-#### f)
-df["Success"] = df["Outcome"].apply(lambda outcome: 1 if outcome == "Success" else 0)
-time_period = df[df.Success == 1]
-time_period["Time_Period"] = time_period["Time_Period"].apply(
-    lambda time_period: "0" + time_period
-    if len(time_period.split("h")[0]) == 1
-    else time_period)
-x = time_period.groupby("Time_Period")["Success"].sum()
-
-f_graph = go.Figure()
-f_graph.add_trace(
-    go.Bar(
-        x=x.index,
-        y=x.values,
-        name="Time Period",
-        marker_color='green',
-    )
-)
-f_graph["layout"]["xaxis"]["title"] = "Hours/Time"
-f_graph["layout"]["yaxis"]["title"] = "Success calls"
-f_graph['layout']['paper_bgcolor'] = '#0e2433'
-f_graph['layout']['plot_bgcolor'] = '#0e2433'
-f_graph['layout']['font_color'] = 'white'
-
-######################################################
+jobs['diff_salary'] = jobs.max_salary - jobs.min_salary
 
 
 sidebar = html.Div(
     [
-        html.H3("Menu", className="display-7 text-white"),
+        html.H3("Contents", className="display-7 text-white"),
         html.Hr(style={'color':'white'}),
         html.Br(),
         dbc.Nav(
             [
-                dbc.NavLink("1) Graph as function of Time",
-                            href="#adesc",
+                dbc.NavLink("EXERCISE 1",
+                            href="#erd",
                             active="exact",
                             className="text-white",
                             external_link=True),
-                
-                dbc.NavLink("2) Number of calls per State",
-                            href="#bdesc",
+
+                dbc.NavLink("EXERCISE 2",
+                            href="#exer2",
                             active="exact",
                             className="text-white",
                             external_link=True),
-                
-                dbc.NavLink("3) Failure/Success/TimeOut",
-                            href="#cdesc",
+
+                dbc.NavLink("EXERCISE 3",
+                            href="#exer3",
                             active="exact",
                             className="text-white",
                             external_link=True),
-                
-                dbc.NavLink("4) Most Successfull States",
-                            href="#ddesc",
+
+                dbc.NavLink("EXERCISE 4",
+                            href="#exer4",
                             active="exact",
                             className="text-white",
                             external_link=True),
-                
-                dbc.NavLink("5) Total Number of Actions",
-                            href="#edesc",
-                            active="exact",
-                            className="text-white",
-                            external_link=True),
-                
-                dbc.NavLink("6) Successes by Time_Period",
-                            href="#fdesc",
+
+                dbc.NavLink("EXERCISE 5",
+                            href="#exer5",
                             active="exact",
                             className="text-white",
                             external_link=True),
@@ -218,8 +194,7 @@ sidebar = html.Div(
     style=SIDEBAR_STYLE,
 )
 
-
-header = html.Div(children=[html.H3("Calls Dashboard  📞"),html.H5("Analyze Successfull/Failed calls")],
+header = html.Div(children=[html.H3("Final Exam"),html.H5("Shakhansho Sabzaliev")],
                   style={'border':"2px solid black",
                          'margin': 'auto',
                          'width':"100%",
@@ -232,62 +207,58 @@ header = html.Div(children=[html.H3("Calls Dashboard  📞"),html.H5("Analyze Su
                          "word-wrap": "break-word",
                          "font-family": "Times"})
 
-a_desc = html.H5("a) We want to see this data in a graph with a time series legend. Then we want to see in the same graph the ratio of success /total calls as a function of date.",
+a_desc = html.H5("Entity Relationship Diagram of the Database",
                 style={'color':'white',
                        'font-family':'Times',
                        'margin-bottom':'0px',
                        'text-align':'left'},
-                 id="adesc")
+                 id="erd")
 
-b_desc = html.H5("b) We want to see another graph that presents the success and failure by State in the form of a bar graph.",
+b_desc = html.H5("The number of employees with the same job.",
                 style={'color':'white',
                        'font-family':'Times',
                        'margin-bottom':'0px',
                        'text-align':'left'},
-                 id="bdesc")
+                 id="exer2")
 
-c_desc = html.H5("c) We want to see at the end which state was the most ' successful ' in share ratios.",
+c_desc = html.H5("Difference between the job MIN & MAX salaries",
                 style={'color':'white',
                        'font-family':'Times',
                        'margin-bottom':'0px',
                        'text-align':'left'},
-                 id="cdesc")
+                 id="exer3")
 
-d_desc = html.H5("d) We want to see at the end which state was the most ' successful ' in share ratios.",
+d_desc = html.H5("Average Employee Salary and 10th, 20th, 75th and 90th Percentile for Salaries in UK",
                 style={'color':'white',
                        'font-family':'Times',
                        'margin-bottom':'0px',
                        'text-align':'left'},
-                 id="ddesc")
+                 id="exer4")
 
-e_desc = html.H5("e) We also want to see a double piechart that displays the total number of actions/ State and number ofsuccess / state.",
+e_desc = html.H5([html.Br(),
+                  html.Br(),
+                  html.Br(),
+                  html.Hr(),
+                  "Dashboard Deployed Successfully!",
+                  html.Br(),
+                  "Thank you for the Course",
+                  html.Br(),
+                  "Learned a lot"],
                 style={'color':'white',
                        'font-family':'Times',
                        'margin-bottom':'0px',
-                       'text-align':'left'},
-                 id="edesc")
-
-f_desc = html.H5("f) We want to know the number of succes by Time_Period.",
-                style={'color':'white',
-                       'font-family':'Times',
-                       'margin-bottom':'0px',
-                       'text-align':'left'},
-                 id="fdesc")
+                       'text-align':'center'},
+                 id="exer5")
 
 
 content = html.Div(id="page-content",
                    children=[
                        header,
+                       
                        a_desc,
-                       dcc.Graph(id="line_plot"),
-                       html.Div(children=[dcc.DatePickerSingle(id='date_picker',
-                                                               min_date_allowed=df_dt_grouped.Date.min(),
-                                                               max_date_allowed=df_dt_grouped.Date.max(),
-                                                               placeholder="Date",
-                                                               display_format="DD/MM/YYYY")],
-                                style={"margin-left":"45%",
-                                       "margin-top":"-40px"}),
-
+                       html.P([html.Img(src=r'assets/graph.png', alt='image', width="80%")], style={'text-align':'center'}),
+                       
+                       html.Br(),
                        html.Br(),
 
                        b_desc,
@@ -296,69 +267,97 @@ content = html.Div(id="page-content",
                        html.Br(),
 
                        c_desc,
-                       dcc.Graph(figure=c_graph),
+                       dcc.Graph(id='graph-with-slider'),
+                       dcc.Slider(
+                           jobs['diff_salary'].min(),
+                           jobs['diff_salary'].max(),
+                           step=3000,
+                           value=jobs['diff_salary'].min(),
+                           id='salary-slider'
+                           ),
 
                        html.Br(),
 
                        d_desc,
-                       dcc.Graph(figure=d_graph),
+                       dcc.Graph(id='graph-year-slider'),
+                       dcc.Slider(
+                           2020,
+                           2022,
+                           step=None,
+                           value=2020,
+                           marks={str(y): str(y) for y in [2020, 2021, 2022]},
+                           id='year-slider'
+                           ),
 
                        html.Br(),
 
                        e_desc,
-                       dcc.Graph(figure=e_graph),
-
-                       html.Br(),
-
-                       f_desc,
-                       dcc.Graph(figure=f_graph),
                        
                        ],
                    style=CONTENT_STYLE)
 
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP,
-                                           dbc.icons.FONT_AWESOME])
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME])
 server = app.server
 
-app.layout = html.Div([
-    dcc.Location(id="url"),
-    sidebar,
-    content
-], style={"background": "#0e2433"})
+app.layout = html.Div([dcc.Location(id="url"),
+                       sidebar,
+                       content],
+                      style={"background": "#0e2433"})
 
+@app.callback(
+    Output('graph-with-slider', 'figure'),
+    Input('salary-slider', 'value'))
+def update_figure(selected_salary):
+    filtered_df = jobs[jobs.diff_salary >= selected_salary]
+
+    c_graph = px.bar(data_frame=filtered_df,
+                     y='job_title',
+                     x='diff_salary',
+                     height=700,
+                     orientation='h',
+                     labels = {'job_title': 'Jobs',
+                               'diff_salary': 'Difference in Salary'},
+                     color_discrete_sequence=["#029e78"])
+
+    c_graph.update_layout(showlegend=True,
+                          plot_bgcolor='#0e2433',
+                          paper_bgcolor='#0e2433',
+                          font_color="white")
+    return c_graph
+
+avg_salary = employees['salary'].mean()
+year = np.array([2020, 2021, 2022])
+percentiles = scrape()
 
 
 @app.callback(
-    Output(component_id="line_plot", component_property="figure"),
-    Input("date_picker", "date"))
-def update_plot(date):
-    df = df_dt_grouped.copy(deep=True)
+    Output('graph-year-slider', 'figure'),
+    Input('year-slider', 'value'))
+def update_figure2(selected_year):
+    filtered = year[year >= selected_year]
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=filtered,
+                             y=[avg_salary for i in filtered],
+                             name='Average Salary',
+                             line=dict(color="black")))
+
+    for i in percentiles:
+        fig.add_trace(go.Scatter(x=filtered,
+                                 y=percentiles[i],
+                                 name=f'{i}th Percentile',
+                                 line=dict(color="#30f216")))
+
+    fig["layout"]["legend_title"] = "Labels"
+    fig['layout']['paper_bgcolor'] = '#0e2433'
+    fig['layout']['plot_bgcolor'] = '#0e2433'
+    fig['layout']['font_color'] = 'white'
+    fig['layout']['xaxis']['tickvals'] = filtered
+    fig['layout']['xaxis']['ticktext'] = list(map(str, list(filtered)))
     
-    if date:
-        df = df_dt_grouped[df_dt_grouped.Date >= date]
+    return fig
 
-    line_graph = px.line(data_frame = df,
-                     x = 'Date',
-                     y = ['Total', 'Success', 'Failure'],
-                     labels = {'Date': '',
-                               'variable': '',
-                               'value': 'Number of Calls'})
-
-    line_graph.update_layout(template='seaborn',
-                         showlegend=True,
-                         plot_bgcolor='#0e2433',
-                         paper_bgcolor='#0e2433',
-                         font_color="white",
-                         legend=dict(
-                             orientation="h",
-                             yanchor="bottom",
-                             y=1.02,
-                             xanchor="right",
-                             x=1,
-                             bordercolor="White",
-                             borderwidth=2))
-    return line_graph
 
 if __name__=='__main__':
     app.run_server(debug=True, port=3000)
